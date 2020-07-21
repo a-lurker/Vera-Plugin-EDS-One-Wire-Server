@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <specVersion>
+    <major>1</major>
+    <minor>0</minor>
+  </specVersion>
+  <device>
+    <deviceType>urn:schemas-cd-jackson-com:device:OWPressureSensor:1</deviceType>
+
+    <staticJson>D_OWPressureSensor.json</staticJson>
+    <serviceList>
+      <service>
+        <serviceType>urn:schemas-cd-jackson-com:service:OWPressureSensor:1</serviceType>
+        <serviceId>urn:cd-jackson-com:serviceId:OWPressureSensor1</serviceId>
+        <SCPDURL>S_OWPressureSensor1.xml</SCPDURL>
+      </service>
+
+    </serviceList>
+   </device>
+
+</root>

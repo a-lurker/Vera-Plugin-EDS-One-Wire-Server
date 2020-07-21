@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <specVersion>
+    <major>1</major>
+    <minor>0</minor>
+  </specVersion>
+  <device>
+    <deviceType>urn:cd-jackson-com:device:OWServer:1</deviceType>
+    <staticJson>D_OWServer.json</staticJson>
+    <friendlyName>OWServer</friendlyName>
+    <manufacturer>CD-Jackson</manufacturer>
+    <modelDescription>EDS One Wire Server 1.0</modelDescription>
+    <modelName>OWServer</modelName>
+    <modelNumber>1.0</modelNumber>
+    <protocol>cr</protocol>
+    <handleChildren>1</handleChildren>
+    <serviceList>
+      <service>
+        <serviceType>urn:schemas-cd-jackson-com:service:OWServer:1</serviceType>
+        <serviceId>urn:upnp-org:serviceId:OWServer1</serviceId>
+        <SCPDURL>S_OWServer.xml</SCPDURL>
+      </service>
+    </serviceList>
+    <eventList>
+    </eventList>
+    <implementationList>
+      <implementationFile>I_OWServer.xml</implementationFile>
+    </implementationList>
+  </device>
+</root>

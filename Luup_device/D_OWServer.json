@@ -1,0 +1,185 @@
+{
+    "flashicon": "https://a-lurker.github.io/icons/Embedded_Data_Systems_50_50.png",
+    "default_icon": "https://a-lurker.github.io/icons/Embedded_Data_Systems_50_50.png",
+    "inScene": "0",
+    "DisplayStatus":{},
+    "doc_url":{
+        "doc_language":1,
+        "doc_manual":1,
+        "doc_version":1,
+        "doc_platform":0,
+        "doc_page":"devices"
+    },
+    "Tabs":[{
+            "Label":{
+                "lang_tag":"tabname_control",
+                "text":"Settings"
+            },
+            "Position":"0",
+            "TabType":"flash",
+            "SceneGroup":[
+                {
+                    "id": "1",
+                    "top": "1",
+                    "left": "0",
+                    "x": "2",
+                    "y": "2"
+                }
+            ],
+            "ControlGroup":[{
+                    "id":"1",
+                    "scenegroup": "1"
+                }
+            ],
+            "Control":[{
+                    "ControlGroup":"1",
+                    "ControlType":"label",
+                    "Label":{
+                        "lang_tag":"devices_lab",
+                        "text":"Devices:"
+                    },
+                    "top": "0",
+                    "Display":{
+                        "Top":15,
+                        "Left":50,
+                        "Width":120,
+                        "Height":20
+                    }
+                },
+                {
+                    "ControlGroup":"1",
+                    "ControlType":"variable",
+                    "top": "0",
+                    "left": "1",
+                    "Display":{
+                        "Service":"urn:upnp-org:serviceId:OWServer1",
+                        "Variable":"Devices",
+                        "Top":15,
+                        "Left":155,
+                        "Width":75,
+                        "Height":20
+                    }
+                },
+                {
+                    "ControlGroup":"1",
+                    "ControlType":"label",
+                    "Label":{
+                        "lang_tag":"errors_lab",
+                        "text":"Chn 1 error count:"
+                    },
+                    "top": "1",
+                    "Display":{
+                        "Top":35,
+                        "Left":50,
+                        "Width":120,
+                        "Height":20
+                    }
+                },
+                {
+                    "ControlGroup":"1",
+                    "ControlType":"variable",
+                    "top": "1",
+                    "left": "1",
+                    "Display":{
+                        "Service":"urn:upnp-org:serviceId:OWServer1",
+                        "Variable":"DataErrorsChannel1",
+                        "Top":35,
+                        "Left":155,
+                        "Width":75,
+                        "Height":20
+                    }
+                },
+                {
+                    "ControlGroup":"1",
+                    "ControlType":"label",
+                    "Label":{
+                        "lang_tag":"errors_lab",
+                        "text":"Chn 2 error count:"
+                    },
+                    "top": "1",
+                    "Display":{
+                        "Top":55,
+                        "Left":50,
+                        "Width":120,
+                        "Height":20
+                    }
+                },
+                {
+                    "ControlGroup":"1",
+                    "ControlType":"variable",
+                    "top": "1",
+                    "left": "1",
+                    "Display":{
+                        "Service":"urn:upnp-org:serviceId:OWServer1",
+                        "Variable":"DataErrorsChannel2",
+                        "Top":55,
+                        "Left":155,
+                        "Width":75,
+                        "Height":20
+                    }
+                },
+                {
+                    "ControlGroup":"1",
+                    "ControlType":"label",
+                    "Label":{
+                        "lang_tag":"errors_lab",
+                        "text":"Chn 3 error count:"
+                    },
+                    "top": "1",
+                    "Display":{
+                        "Top":75,
+                        "Left":50,
+                        "Width":120,
+                        "Height":20
+                    }
+                },
+                {
+                    "ControlGroup":"1",
+                    "ControlType":"variable",
+                    "top": "1",
+                    "left": "1",
+                    "Display":{
+                        "Service":"urn:upnp-org:serviceId:OWServer1",
+                        "Variable":"DataErrorsChannel3",
+                        "Top":75,
+                        "Left":155,
+                        "Width":75,
+                        "Height":20
+                    }
+                },
+                {
+                    "ControlType": "variable",
+                    "Display": {
+                        "Service": "urn:upnp-org:serviceId:OWServer1",
+                        "Variable": "LinkToDeviceWebPage",
+                        "Top": 95,
+                        "Left": 50,
+                        "Width": 150,
+                        "Height": 20
+                    }
+                },
+            ]
+        },
+        {
+            "Label":{
+                "lang_tag":"devices",
+                "text":"Add Devices"
+            },
+            "Position":"2",
+            "TabType":"javascript",
+            "ScriptName":"J_OWServer.js",
+            "Function":"showDevices"
+        },
+        {
+            "Label":{
+                "lang_tag":"advanced",
+                "text":"Advanced"
+            },
+            "Position":"3",
+            "TabType":"javascript",
+            "ScriptName":"shared.js",
+            "Function":"advanced_device"
+        }
+    ],
+    "device_type": "urn:cd-jackson-com:device:OWServer:1"
+}
