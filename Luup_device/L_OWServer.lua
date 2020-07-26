@@ -1,8 +1,12 @@
 --[[
     Embedded Data Systems One-Wire Server plugin
 
-    This software was originated by Chris Jackson, (c) Chris Jackson
-    Thanks to Chris for his work on this software.
+    This software was originated by Chris Jackson, (c) Chris Jackson.
+
+    Thanks to Chris for his work on this software. Chris has kindly
+    given permmission (25 July 2020) for this modified software to
+    be placed on GitHub and linked to the AltApp store.
+
     Modified and updated by a-lurker, July 2020
 
     Modifications and updates by a-lurker to the orginal program
@@ -30,6 +34,7 @@ local THIS_LUL_DEVICE = nil
 local m_json         = nil
 local m_childDevices = {}
 local m_newDevices   = {}
+local m_ipAddress    = nil
 
 local m_OWServerTimeout = 10
 
@@ -657,32 +662,32 @@ end
         getdevcap     returns json
 ]]
 function incomingCtrl(lul_request, lul_parameters)
-    debug("Executing incomingCtrl")
+    debug('Executing incomingCtrl')
 
     local funct = lul_parameters.funct
     -- local service = lul_parameters.service
 
-    if (funct == "create") then
+    if (funct == 'create') then
         local devices   = lul_parameters.cnt
         local createDev = {}
 
         -- receive the data from the UI and create the child devices
         for cnt = 1, devices do
             createDev[cnt] = {}
-            createDev[cnt].ROMId   = lul_parameters["Rom"..cnt]
-            createDev[cnt].Device  = tonumber(lul_parameters["Dev"..cnt])
-            createDev[cnt].Service = tonumber(lul_parameters["Typ"..cnt])
-            -- debug("Loop "..cnt)
-            -- debug("Dev"..cnt..": " .. lul_parameters["Dev"..cnt])
-            -- debug("Typ"..cnt..": " .. lul_parameters["Typ"..cnt])
-            -- debug("ROM"..cnt..": " .. lul_parameters["Rom"..cnt])
+            createDev[cnt].ROMId   = lul_parameters['Rom'..cnt]
+            createDev[cnt].Device  = tonumber(lul_parameters['Dev'..cnt])
+            createDev[cnt].Service = tonumber(lul_parameters['Typ'..cnt])
+            -- debug('Loop '..cnt)
+            -- debug('Dev '..cnt..': ' .. lul_parameters['Dev'..cnt])
+            -- debug('Typ '..cnt..': ' .. lul_parameters['Typ'..cnt])
+            -- debug('ROM '..cnt..': ' .. lul_parameters['Rom'..cnt])
         end
 
         createNewDevices(createDev)
 
-        return "OK", 'text/html'
+        return 'OK', 'text/html'
 
-    elseif (funct == "getnew") then
+    elseif (funct == 'getnew') then
         local DevList = {}
         local Cnt = 0
 
@@ -698,9 +703,9 @@ function incomingCtrl(lul_request, lul_parameters)
         end
 
         return m_json.encode(DevList), 'application/json'
-    elseif (funct == "gettypes") then
+    elseif (funct == 'gettypes') then
         return m_json.encode(TypeTable), 'application/json'
-    elseif (funct == "getdevcap") then
+    elseif (funct == 'getdevcap') then
         return m_json.encode(DeviceTable), 'application/json'
     end
 end
@@ -720,21 +725,21 @@ end
         [, invisible (boolean)]
 ]]
 local function createNewDevices(createDev)
-    local parameters = ""
+    local parameters = ''
     local children = luup.chdev.start(THIS_LUL_DEVICE)
 
     -- add in the existing children so we don't loose any when we sync!
     for _, v in pairs(m_childDevices) do
-        parameters = PLUGIN_SID..",ROMId="..v.ROMId.."\n"..PLUGIN_SID..",Param="..v.Param.."\n"
+        parameters = PLUGIN_SID..',ROMId='..v.ROMId..'\n'..PLUGIN_SID..',Param='..v.Param..'\n'
 
         luup.chdev.append(THIS_LUL_DEVICE, children,
-            v.ROMId..":"..v.Param, "",
-            v.Device, "", "", "", false)
+            v.ROMId..':'..v.Param, '',
+            v.Device, '', '', '', false)
     end
 
     for _, v in pairs(createDev) do
         if (v.Service > TYPE_IGNORE) then
-            parameters = ""
+            parameters = ''
             parameters = parameters..PLUGIN_SID..",DeviceFile="..TypeTable[v.Service].DeviceFile.."\n"
             parameters = parameters..PLUGIN_SID..",ROMId="     ..v.ROMId.."\n"
             parameters = parameters..PLUGIN_SID..",Param="     ..DeviceTable[v.Device].Parameter.."\n"
@@ -773,7 +778,8 @@ end
 -- http://Vera_IP_address/devices.htm?rom=4300000200AD1928&variable=UserByte1&value=75
 local function sendCommand(Device, Value)
     -- debug("sendCommand: Device " .. Device .. " to "..Value)
-    local lul_cmd = 'http://' .. luup.devices[THIS_LUL_DEVICE].ip .. '/devices.htm?rom=' .. m_childDevices[Device].ROMId .. "&variable=" .. m_childDevices[Device].Command .. "&value=".. Value
+    
+    local lul_cmd = 'http://' .. m_ipAddress .. '/devices.htm?rom=' .. m_childDevices[Device].ROMId .. "&variable=" .. m_childDevices[Device].Command .. "&value=".. Value
 
     -- debug("sendCommand --> " .. lul_cmd)
     local code, res = luup.inet.wget(lul_cmd, m_OWServerTimeout, "", "")
@@ -829,7 +835,7 @@ function pollOWServer()
     local OWDevices = {}
 
     -- poll the OW-SERVER and get 'details.xml'
-    local code, res = luup.inet.wget("http://"..luup.devices[THIS_LUL_DEVICE].ip.."/details.xml", m_OWServerTimeout, "", "")
+    local code, res = luup.inet.wget('http://'..m_ipAddress..'/details.xml', m_OWServerTimeout, '', '')
 
     if (code ~= 0) then
         luup.call_timer('pollOWServer', 1, m_samplingPeriod, "")
@@ -840,27 +846,27 @@ function pollOWServer()
     --debug(res)
 
     -- process the XML file into a table
-    local Count = 0
+    local count = 0
     local ni,c,label,xarg, empty
     local i, j = 1, 1
-    while true do
+    while (true) do
         ni, j, c, label, xarg, empty = string.find(res, "<(%/?)([%w:_]+)(.-)(%/?)>", i)
         if not ni then
             break
         end
         local text = string.sub(res, i, ni-1)
 
-        if not string.find(text, "^%s*$") then
-            if (Count == 0) then
+        if (not string.find(text, "^%s*$")) then
+            if (count == 0) then
                 OWServer[label] = text
             else
-                OWDevices[Count][label] = text
+                OWDevices[count][label] = text
             end
         end
-        if c == "" then   -- start tag
+        if (c == "") then   -- start tag
             if (string.sub(label, 1, 3) == "owd") then
-                Count = Count + 1
-                OWDevices[Count] = {}
+                count = count + 1
+                OWDevices[count] = {}
             end
         end
         i = j+1
@@ -883,20 +889,20 @@ function pollOWServer()
 
     -- loop through all the One-Wire devices in the XML-file table
     local found = 0
-    for Count = 1, #OWDevices do
+    for count = 1, #OWDevices do
         found = 0
 
         -- search all child devices to find any with the ROMId
         for _, v in pairs(m_childDevices) do
-            if (v.ROMId == OWDevices[Count]["ROMId"]) then
-                 -- debug("Processing: "..OWDevices[Count]["ROMId"].."::"..v.Param.." == "..OWDevices[Count][v.Param])
+            if (v.ROMId == OWDevices[count]["ROMId"]) then
+                 -- debug("Processing: "..OWDevices[count]["ROMId"].."::"..v.Param.." == "..OWDevices[count][v.Param])
                 found = 1
 
                 -- process some special parameters here....
                 if (v.Service == TEMPERATURE.SERVICE) then
                     -- Celsius to Farhenheit conversion?
                     if (v.Units == "F") then
-                        OWDevices[Count][v.Param] = celsiusToF(OWDevices[Count][v.Param])
+                        OWDevices[count][v.Param] = celsiusToF(OWDevices[count][v.Param])
                     end
                 elseif (v.ServiceId == COUNTER.SERVICE) then
                     -- store the raw counter value
@@ -906,7 +912,7 @@ function pollOWServer()
                 end
 
                 -- keep a loop buffer to allow rolling average filter
-                v.History[v.Counter] = round(OWDevices[Count][v.Param],1)
+                v.History[v.Counter] = round(OWDevices[count][v.Param],1)
                 v.Counter = v.Counter + 1
                 if (v.Counter > v.Average) then
                     v.Counter = 1
@@ -938,15 +944,15 @@ function pollOWServer()
                 end
 
                 -- remember the last data
-                v.LastData = OWDevices[Count][v.Param]
+                v.LastData = OWDevices[count][v.Param]
             end
         end
 
         -- did we find a new device?
         if (found == 0) then
-            if (m_newDevices[OWDevices[Count]["ROMId"]] == nil) then
-                m_newDevices[OWDevices[Count]["ROMId"]] = OWDevices[Count]["Name"]
-                debug("New device found "..OWDevices[Count]["ROMId"] .. " " ..OWDevices[Count]["Name"],50)
+            if (m_newDevices[OWDevices[count]["ROMId"]] == nil) then
+                m_newDevices[OWDevices[count]["ROMId"]] = OWDevices[count]["Name"]
+                debug("New device found "..OWDevices[count]["ROMId"] .. " " ..OWDevices[count]["Name"],50)
             end
         end
     end
@@ -999,8 +1005,9 @@ function initialise(lul_device)
     local ipAddress = ipa:match('^(%d%d?%d?%.%d%d?%d?%.%d%d?%d?%.%d%d?%d?)')
 
     if ((ipAddress == nil) or (ipAddress == '')) then return false, 'Enter a valid IP address', PLUGIN_NAME end
+    m_ipAddress = ipAddress
 
-    local linkToDeviceWebPage = "<a href='http://"..ipAddress.."/' target='_blank'>EDS OW server web page</a>"
+    local linkToDeviceWebPage = "<a href='http://"..m_ipAddress.."/' target='_blank'>EDS OW server web page</a>"
     updateVariable('LinkToDeviceWebPage', linkToDeviceWebPage)
 
 
