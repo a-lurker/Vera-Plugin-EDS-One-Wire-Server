@@ -28,7 +28,7 @@
 
 local PLUGIN_NAME     = 'OWServer'
 local PLUGIN_SID      = 'urn:upnp-org:serviceId:OWServer1'
-local PLUGIN_VERSION  = '0.52'
+local PLUGIN_VERSION  = '0.53'
 local THIS_LUL_DEVICE = nil
 
 local m_json         = nil
@@ -605,6 +605,8 @@ end
 -- If possible, get a JSON parser. If none available, returns nil. Note that typically UI5 may not have a parser available.
 local function loadJsonModule()
     local jsonModules = {
+        'rapidjson',            -- how many json libs are there?
+        'cjson',                -- openLuup?
         'dkjson',               -- UI7 firmware
         'openLuup.json',        -- https://community.getvera.com/t/pure-lua-json-library-akb-json/185273
         'akb-json',             -- https://community.getvera.com/t/pure-lua-json-library-akb-json/185273
@@ -613,8 +615,6 @@ local function loadJsonModule()
         'dropbox_json_parser',  -- dropbox plugin
         'hue_json',             -- hue plugin
         'L_ALTUIjson',          -- AltUI plugin
-        'cjson',                -- openLuup?
-        'rapidjson'             -- how many json libs are there?
     }
 
     local ptr  = nil
@@ -648,66 +648,6 @@ end
 
 local function celsiusToF(Celsius)
     return (Celsius * 9/5) + 32
-end
-
---[[
-    Entry point for all html page requests and all ajax function calls
-    Accesed via http://Vera_IP_Address:3480/data_request?id=lr_owCtrl
-    Function needs to be global
-
-    URL parmeters ?funct=
-        create        returns htlm
-        getnew        returns json
-        gettypes      returns json
-        getdevcap     returns json
-]]
-function incomingCtrl(lul_request, lul_parameters)
-    debug('Executing incomingCtrl')
-
-    local funct = lul_parameters.funct
-    -- local service = lul_parameters.service
-
-    if (funct == 'create') then
-        local devices   = lul_parameters.cnt
-        local createDev = {}
-
-        -- receive the data from the UI and create the child devices
-        for cnt = 1, devices do
-            createDev[cnt] = {}
-            createDev[cnt].ROMId   = lul_parameters['Rom'..cnt]
-            createDev[cnt].Device  = tonumber(lul_parameters['Dev'..cnt])
-            createDev[cnt].Service = tonumber(lul_parameters['Typ'..cnt])
-            -- debug('Loop '..cnt)
-            -- debug('Dev '..cnt..': ' .. lul_parameters['Dev'..cnt])
-            -- debug('Typ '..cnt..': ' .. lul_parameters['Typ'..cnt])
-            -- debug('ROM '..cnt..': ' .. lul_parameters['Rom'..cnt])
-        end
-
-        createNewDevices(createDev)
-
-        return 'OK', 'text/html'
-
-    elseif (funct == 'getnew') then
-        local DevList = {}
-        local Cnt = 0
-
-        for kNew, vNew in pairs(m_newDevices) do
-            for kDev, vDev in pairs(DeviceTable) do
-                if (vDev.Device == vNew) then
-                    DevList[Cnt] = {}
-                    DevList[Cnt].ROMId  = kNew
-                    DevList[Cnt].Device = kDev
-                    Cnt = Cnt + 1
-                end
-            end
-        end
-
-        return m_json.encode(DevList), 'application/json'
-    elseif (funct == 'gettypes') then
-        return m_json.encode(TypeTable), 'application/json'
-    elseif (funct == 'getdevcap') then
-        return m_json.encode(DeviceTable), 'application/json'
-    end
 end
 
 --[[
@@ -760,6 +700,68 @@ local function createNewDevices(createDev)
     luup.chdev.sync(THIS_LUL_DEVICE, children)
 end
 
+--[[
+    Entry point for all html page requests and all ajax function calls
+    Accesed via http://Vera_IP_Address:3480/data_request?id=lr_owCtrl
+    Function needs to be global
+
+    These URLs are requested by the plugin's UI javascript code during the set up of the one wire devices.
+    URL parmeters ?funct=
+        create        returns text
+        getnew        returns json
+        gettypes      returns json
+        getdevcap     returns json
+]]
+function incomingCtrl(lul_request, lul_parameters)
+    local funct = lul_parameters.funct
+    if (funct) then debug('Executing incomingCtrl:'..funct) end
+
+    -- local service = lul_parameters.service
+
+    if (funct == 'create') then
+        local devices   = lul_parameters.cnt
+        local createDev = {}
+
+        -- receive the data from the UI and create the child devices
+        for cnt = 1, devices do
+            createDev[cnt] = {}
+            createDev[cnt].ROMId   = lul_parameters['Rom'..cnt]
+            createDev[cnt].Device  = tonumber(lul_parameters['Dev'..cnt])
+            createDev[cnt].Service = tonumber(lul_parameters['Typ'..cnt])
+
+            debug('New device '..cnt)
+            debug('  '..cnt..': Device: ' .. lul_parameters['Dev'..cnt])
+            debug('  '..cnt..': Type: ' .. lul_parameters['Typ'..cnt])
+            debug('  '..cnt..': ROM: ' .. lul_parameters['Rom'..cnt])
+        end
+
+        debug('Creating '..devices.. ' devices. Existing devices will be retained.')
+        createNewDevices(createDev)
+
+        return 'OK', 'text/html'
+
+    elseif (funct == 'getnew') then
+        local DevList = {}
+        local Cnt = 0
+
+        for kNew, vNew in pairs(m_newDevices) do
+            for kDev, vDev in pairs(DeviceTable) do
+                if (vDev.Device == vNew) then
+                    DevList[Cnt] = {}
+                    DevList[Cnt].ROMId  = kNew
+                    DevList[Cnt].Device = kDev
+                    Cnt = Cnt + 1
+                end
+            end
+        end
+        return m_json.encode(DevList), 'application/json'
+    elseif (funct == 'gettypes') then
+        return m_json.encode(TypeTable), 'application/json'
+    elseif (funct == 'getdevcap') then
+        return m_json.encode(DeviceTable), 'application/json'
+    end
+end
+
 -- Helper functions, return what the swich is switching to
 local function togglePowerState(lul_device, lul_settings)
     local reverse = luup.variable_get("urn:micasaverde-com:serviceId:HaDevice1","ReverseOnOff",lul_device)
@@ -775,10 +777,10 @@ local function togglePowerState(lul_device, lul_settings)
     return power
 end
 
--- http://Vera_IP_address/devices.htm?rom=4300000200AD1928&variable=UserByte1&value=75
+-- http://OWServer_IP_address/devices.htm?rom=4300000200AD1928&variable=UserByte1&value=75
 local function sendCommand(Device, Value)
     -- debug("sendCommand: Device " .. Device .. " to "..Value)
-    
+
     local lul_cmd = 'http://' .. m_ipAddress .. '/devices.htm?rom=' .. m_childDevices[Device].ROMId .. "&variable=" .. m_childDevices[Device].Command .. "&value=".. Value
 
     -- debug("sendCommand --> " .. lul_cmd)
@@ -1010,11 +1012,16 @@ function initialise(lul_device)
     local linkToDeviceWebPage = "<a href='http://"..m_ipAddress.."/' target='_blank'>EDS OW server web page</a>"
     updateVariable('LinkToDeviceWebPage', linkToDeviceWebPage)
 
-
     -- allow the user to change the sampling period
     m_samplingPeriod = luup.variable_get(PLUGIN_SID, "SamplingPeriod", THIS_LUL_DEVICE)
     if ((m_samplingPeriod == nil) or (m_samplingPeriod == '')) then
-        m_samplingPeriod = '20'
+        m_samplingPeriod = '60'
+        updateVariable("SamplingPeriod", m_samplingPeriod)
+    end
+
+    local numSP = tonumber(m_samplingPeriod)
+    if ((numSP == nil) or (numSP < 60)) then
+        m_samplingPeriod = '60'
         updateVariable("SamplingPeriod", m_samplingPeriod)
     end
 

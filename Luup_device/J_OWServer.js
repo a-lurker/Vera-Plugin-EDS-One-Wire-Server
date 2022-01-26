@@ -2,25 +2,26 @@
 // For: Embedded Data Systems
 // (c) Chris Jackson
 // Modifications to eliminate the dependence on prototypejs by a-lurker July 2020
+// Further mods Jan 2022 to fix object list indexing issue
 
-var m_newDevices = [];
-var m_deviceCaps = [];
-var m_typeTable  = [];
+let m_newDevices = [];
+let m_deviceCaps = [];
+let m_typeTable  = [];
 
-var URL           = '/port_3480/data_request';
-var PLUGIN_URL_ID = 'lr_owCtrl';
+let URL           = '/port_3480/data_request';
+let PLUGIN_URL_ID = 'lr_owCtrl';
 
 function ajaxRequest(url, args, onSuccess, onError) {
    // append any args to the url
-   var first = true;
-   for (var prop in args) {
+   let first = true;
+   for (let prop in args) {
       url += (first ? "?" : "&") + prop + "=" + args[prop];
       first = false;
    }
 
    // Internet Explorer (IE5 and IE6) use an ActiveX object instead of
    // the XMLHttpRequest object. We will not support those versions.
-   var httpRequest = new XMLHttpRequest();
+   let httpRequest = new XMLHttpRequest();
    if (!httpRequest) {
       alert('Cannot create httpRequest instance. Get an up-to-date browser!');
       return;
@@ -51,57 +52,68 @@ function ajaxRequest(url, args, onSuccess, onError) {
 function OWpluginRegister()
 {
    // loop through the devices
-   var numDevices   = 0;
-   var args = {id: PLUGIN_URL_ID, funct: 'create'};
+   let newDeviceCnt = 0;
+   let args = {id: PLUGIN_URL_ID, funct: 'create'};
 
-   for (var iDevice=0; iDevice<m_newDevices.length; iDevice++) {
-      numDevices++;
+   for (let iDevice in m_newDevices) {
+      newDeviceCnt++;
 
-      var elSelect = document.getElementById('OWVar-'+iDevice);
+      let elSelect = document.getElementById('OWVar-'+iDevice);
       m_newDevices[iDevice].Type = elSelect.value;
 
-      args["Rom"+numDevices] = m_newDevices[iDevice].ROMId;
-      args["Dev"+numDevices] = m_newDevices[iDevice].Device;
-      args["Typ"+numDevices] = m_newDevices[iDevice].Type;
+      args["Rom"+newDeviceCnt] = m_newDevices[iDevice].ROMId;
+      args["Dev"+newDeviceCnt] = m_newDevices[iDevice].Device;
+      args["Typ"+newDeviceCnt] = m_newDevices[iDevice].Type;
    }
 
-   if (numDevices == 0) return;
+   if (newDeviceCnt == 0) return;
 
-   args.cnt = numDevices;
+   args.cnt = newDeviceCnt;
 
    ajaxRequest(
       URL,
       args,
       function() {
          // refer to: http://wiki.micasaverde.com/index.php/JavaScript_API#set_panel_html_.28html.29
-         set_panel_html("Configuration has been sent to Vera. LuaPnP will restart and the new devices should take effect...");
+         set_panel_html("Configuration sent!. Luup Engine will restart and the new device(s) should take effect.");
       },
    null);
 }
 
 // display the result
 function onSuccess3(httpRequest) {
-   m_newDevices     = JSON.parse(httpRequest.responseText);
-   var newDeviceCnt = m_newDevices.length;
+   try {m_newDevices = JSON.parse(httpRequest.responseText); }
+   catch(e) {
+       console.log("Error: json parsing failed - refer to next console output line");
+       console.log(e);
+       set_panel_html("Error: json parsing failed");
+       return;
+   }
 
-   var innerHTML = "";
-   var lastId    = "";
-   var style     = "";
+   let innerHTML = "";
+   let lastId    = "";
+   let style     = "";
+   let deviceCnt = 0;
 
-   if (newDeviceCnt == 0) {
-      innerHTML = "No new devices to add";
+   // loop through the devices in the m_newDevices list and see how many there are.
+   // m_newDevices is not an array. It's list of objects - as are m_deviceCaps and m_typeTable
+   for (let aDevice in m_newDevices) { deviceCnt ++; }
+
+   if (deviceCnt == 0) {
+      innerHTML = "There are no new devices to add";
    }
    else {
       innerHTML = "<div style='width:570px;' id='OWServer-device-list'>" +
                "<div style=\"border-bottom:2px solid red;margin:6px;\">" +
                "<table><tr>"+
-               "<td width='160px'>Total NEW devices: <b>" + newDeviceCnt + "</b></td>" +
-               "<td><input type='button' class='btn' onclick='OWpluginRegister();' value='Add'></td>" +
+               "<td width='160px'>Total NEW devices: <b>" + deviceCnt + "</b></td>" +
+               "<td><input type='button' onclick='OWpluginRegister();' value='Add'></td>" +
                "<td width='30px'>&nbsp;</td>" +
                "<td>Check <b>ALL</b> entries before clicking the Add button.</td>" +
                "</tr></table></div>";
-      // loop through the devices
-      for (var iDevice=0; iDevice < newDeviceCnt; iDevice++) {
+
+      // loop through all the new devices
+      for (let iDevice in m_newDevices) {
          if (m_newDevices[iDevice].ROMId != lastId) {
             style  = "border-top:3px solid green;margin:2px;";
             lastId = m_newDevices[iDevice].ROMId;
@@ -118,8 +130,8 @@ function onSuccess3(httpRequest) {
                           "<td><form>" +
                           "<select id='OWVar-" + iDevice + "' style='width:185px'>";
 
-         var numOptions = m_deviceCaps[m_newDevices[iDevice].Device].Services.length;
-         for (var iOpt=0; iOpt<numOptions; iOpt++) {
+         let numOptions = m_deviceCaps[m_newDevices[iDevice].Device].Services.length;
+         for (let iOpt=0; iOpt<numOptions; iOpt++) {
             innerHTML += "<option value='" + m_deviceCaps[m_newDevices[iDevice].Device].Services[iOpt] + "'>" + m_typeTable[m_deviceCaps[m_newDevices[iDevice].Device].Services[iOpt]].Name + "</option>";
          }
 
@@ -138,7 +150,7 @@ function onSuccess2(httpRequest)
 {
    m_deviceCaps = JSON.parse(httpRequest.responseText);
 
-   var args = {
+   let args = {
       id:    PLUGIN_URL_ID,
       funct: "getnew"
    };
@@ -150,7 +162,7 @@ function onSuccess1(httpRequest)
 {
    m_typeTable = JSON.parse(httpRequest.responseText);
 
-   var args = {
+   let args = {
       id:    PLUGIN_URL_ID,
       funct: "getdevcap"
    };
@@ -160,7 +172,7 @@ function onSuccess1(httpRequest)
 // Get the Type Table
 function showDevices()
 {
-   var args = {
+   let args = {
       id:    PLUGIN_URL_ID,
       funct: "gettypes"
    };
