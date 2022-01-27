@@ -12,9 +12,9 @@ More information on the EDS OW server here:
 
 [Embedded Data Systems](https://www.embeddeddatasystems.com/)
 
-Note the plugin need access to a json library. Older Veras won't have one but newer Veras will have dkjson.lua already installed. The plugin searches for a number of different json libraries:
+Note the plugin needs access to a json library. Older Veras won't have one but newer Veras will have dkjson.lua already installed. The plugin searches for a number of different json libraries:
 
-[Refer to this code](https://github.com/a-lurker/Vera-Plugin-EDS-One-Wire-Server/blob/f643664f1ecf7a96299cfa0ce96a8962da21d9bb/Luup_device/L_OWServer.lua#L605)
+[Refer to this code](https://github.com/a-lurker/Vera-Plugin-EDS-One-Wire-Server/blob/d04c8456384aa158b1fbf8e7efac30faa4c08d23/Luup_device/L_OWServer.lua#L605)
 
 Install the plugin from the Alt App Store: in AltUI go to the "More" tab and select "App Store" from the drop down menu. You will find the plugin under "def" as "EDS One Wire Server". Install it.
 
